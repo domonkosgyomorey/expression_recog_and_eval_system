@@ -6,6 +6,8 @@ A handwirtten math expression evaluation project for a course at my University
 
 ## Dataset
 https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols
+The Dataset contains lots of different math symbols on a 45x45 picture
+When reading the dataset I do a data augmentation for better learning
 
 ## Current models
 
@@ -32,3 +34,9 @@ A Simple restNet based model
 - creating a bounding box
 - resizeing the ROI image
 - sorting the segment based on X coordinate
+
+## Future plans
+- Better segmentation mechnism
+- Creating some data structure for storing the segments
+- Develop an algorithm for reconstructing math symbol from different segments ( like fraction )
+ 
