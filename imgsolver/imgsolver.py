@@ -41,7 +41,7 @@ class ImgSolver:
 
     def eval(self, img):
         seg_and_x = e2s.expr2segm_img(img)
-        model : keras.models.Sequential = keras.models.load_model('number_classification_v3.model.keras')
+        model : keras.models.Sequential = keras.models.load_model('number_classification_v2.model.keras')
 
         sorted_seg = map(lambda x: x[0], sorted(seg_and_x, key=lambda x: x[1]))
         for segment in sorted_seg:
@@ -61,5 +61,5 @@ class ImgSolver:
             elif predicted_class_name == 'operator':
                 prediction = self.symbol_classifier.predict(segment)
                 predicted_name = self.sym_indices[np.argmax(prediction, axis=-1)[0]]
-"""
+            """
             print("Predicted: ", predicted_name)
