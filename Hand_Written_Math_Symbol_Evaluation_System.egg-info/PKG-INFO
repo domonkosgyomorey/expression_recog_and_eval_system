@@ -12,6 +12,7 @@ Requires-Dist: opencv-python
 Requires-Dist: matplotlib
 Requires-Dist: livelossplot
 Requires-Dist: sympy
+Requires-Dist: scikit-learn
 
 # Description
 

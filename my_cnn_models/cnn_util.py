@@ -30,7 +30,8 @@ def create_train_validation_generator(dataset_path, rescale=1.0/255.0,
         batch_size=batch_size,
         color_mode='grayscale',
         class_mode=class_mode,
-        subset='training'
+        subset='training',
+        shuffle=True
     )
 
     validation_generator = data_gen.flow_from_directory(
@@ -39,8 +40,10 @@ def create_train_validation_generator(dataset_path, rescale=1.0/255.0,
         batch_size=batch_size,
         color_mode='grayscale',
         class_mode=class_mode,
-        subset='validation')
-
+        subset='validation',
+        shuffle=False   
+    )
+    
     return train_generator, validation_generator
 
 def thickening_line(img):
@@ -338,7 +341,6 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
                   validation_data=validation_generator,
                   validation_steps=validation_generator.samples // validation_generator.batch_size,
                   epochs=epoch,
-                  class_weight=compute_class_weights(train_generator),
                   callbacks=callbacks
                   )
         

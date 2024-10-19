@@ -15,6 +15,7 @@ requirements = [
     'matplotlib',
     'livelossplot',
     'sympy',
+    'scikit-learn'
 ]
 
 setup(
