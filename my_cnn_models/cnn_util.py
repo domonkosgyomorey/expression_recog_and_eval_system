@@ -1,11 +1,13 @@
 from keras import callbacks
 import matplotlib.pyplot as plt
-from keras.src.legacy.preprocessing.image import ImageDataGenerator
+from keras.src.legacy.preprocessing.image import ImageDataGenerator, DirectoryIterator
 from keras import layers, models
 from keras.src.callbacks import EarlyStopping, ReduceLROnPlateau 
 import cv2
 import numpy as np
 import keras
+import matplotlib
+matplotlib.use('Agg')
 import livelossplot as llp
 import os
 
@@ -72,8 +74,13 @@ def create_train_validation_generator_augmented(dataset_path, rescale=1.0/255.0,
         color_mode='grayscale',
         class_mode=class_mode,
         subset='validation')
-
+    
     return train_generator, validation_generator
+
+def compute_class_weights(data_generator: DirectoryIterator):
+    total_samples = len(data_generator.classes)
+    class_counts = np.bincount(data_generator.classes)
+    return {i: total_samples / (len(class_counts)*count) for i, count in enumerate(class_counts)}
     
 def save_class_indices(file_path, class_indices):
     with open(file_path, 'w') as f:
@@ -238,7 +245,7 @@ def create_model_v4(num_classes) -> models.Sequential:
     
     return model
 
-def train_model(model, dataset_path, model_name, epoch, do_augmentation=False, enable_plotting=True):
+def train_model(model: models.Model, dataset_path, model_name, epoch, do_augmentation=False, enable_plotting=True):
     model.summary()
     
     train_generator = None
@@ -251,28 +258,33 @@ def train_model(model, dataset_path, model_name, epoch, do_augmentation=False, e
         train_generator, validation_generator = create_train_validation_generator_augmented(dataset_path, class_mode=CATEGORICAL_CLASS_MODE, target_size=(45, 45))
             
     save_class_indices(model_name+'_indices.txt', train_generator.class_indices)
+    plot_loss = llp.PlotLossesKeras()
     
     history = None
+    
+    callbacks = [
+        EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
+        ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=3,
+            min_lr=0.00001
+        ),
+        create_checkpoint(model_name)
+    ]
+    
     if enable_plotting:
-        plot_loss = llp.PlotLossesKeras()
-        
-        history = model.fit(
-            train_generator,
-            steps_per_epoch=train_generator.samples // train_generator.batch_size,
-            validation_data=validation_generator,
-            validation_steps=validation_generator.samples // validation_generator.batch_size,
-            epochs=epoch,
-            callbacks=[create_checkpoint(model_name), plot_loss]
-        )        
-    else:
-        history = model.fit(
-            train_generator,
-            steps_per_epoch=train_generator.samples // train_generator.batch_size,
-            validation_data=validation_generator,
-            validation_steps=validation_generator.samples // validation_generator.batch_size,
-            epochs=epoch,
-            callbacks=[create_checkpoint(model_name)]
-        )
+            callbacks.append(plot_loss)
+            
+    history = model.fit(
+        train_generator,
+        steps_per_epoch=train_generator.samples // train_generator.batch_size,
+        validation_data=validation_generator,
+        validation_steps=validation_generator.samples // validation_generator.batch_size,
+        epochs=epoch,
+        class_weight=compute_class_weights(train_generator),
+        callbacks=callbacks
+    )
         
     write_result_statistics(model, validation_generator, validation_generator.class_indices)
     plot_history(history)
@@ -308,20 +320,26 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
             print('Model is already exists')
             model:models.Sequential = models.load_model(model_path)
 
+        callbacks = [
+            EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
+            ReduceLROnPlateau(
+                monitor='val_loss',
+                factor=0.5,
+                patience=3,
+                min_lr=0.00001
+            ),
+            create_checkpoint(model_path),
+        ]
+        if enable_plotting:
+            callbacks.append(plot_loss)
+        
         model.fit(train_generator,
                   steps_per_epoch=train_generator.samples // train_generator.batch_size,
                   validation_data=validation_generator,
                   validation_steps=validation_generator.samples // validation_generator.batch_size,
                   epochs=epoch,
-                  callbacks=[
-                      EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
-                      ReduceLROnPlateau(
-                          monitor='val_loss',
-                          factor=0.5,
-                          patience=3,
-                          min_lr=0.00001
-                      ),
-                      create_checkpoint(model_path),
-                      plot_loss])
+                  class_weight=compute_class_weights(train_generator),
+                  callbacks=callbacks
+                  )
         
         return model

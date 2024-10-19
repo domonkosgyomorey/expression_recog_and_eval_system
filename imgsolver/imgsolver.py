@@ -75,6 +75,9 @@ class ImgSolver:
     def eval(self, img):
         seg_and_x = e2s.expr2segm_img(img)
         sorted_seg = map(lambda x: x[0], sorted(seg_and_x, key=lambda x: x[1]))
+        
+        predicted_classes = []
+        
         for segment in sorted_seg:
             segment = segment.astype('float32')
             plt.imshow(segment)
@@ -112,4 +115,7 @@ class ImgSolver:
             print('Prediction distribution: ', pred_dist)
             print('Prediction: ', prediction)
             print('Confidence: ', np.max(pred_dist)*np.max(category_pred))
-
+            
+            predicted_classes.append(prediction)
+        
+        return predicted_classes

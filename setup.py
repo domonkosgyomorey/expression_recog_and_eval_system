@@ -14,6 +14,7 @@ requirements = [
     'opencv-python',
     'matplotlib',
     'livelossplot',
+    'sympy',
 ]
 
 setup(
