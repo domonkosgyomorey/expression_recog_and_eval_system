@@ -7,16 +7,14 @@ def expr2segm_img(img) -> list:
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    _, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
     img = 255 - img
     
     # BIIIG BIG IMPACT WTF
     img = skimage.morphology.skeletonize(img)
     img = img.astype(np.uint8)*255
-
-    _, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
+    
+    img = skimage.morphology.dilation(img, skimage.morphology.square(2))
+    
     img_size = 45
     contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     segments = []

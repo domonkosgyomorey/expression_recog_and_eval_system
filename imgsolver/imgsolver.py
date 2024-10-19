@@ -91,7 +91,7 @@ class ImgSolver:
             print('Category distribution v3: ', category_pred_v3)
             print('Category prediction v4: ', category_v4, '\n')
             print('Category prediction v3: ', category_v3, '\n')
-            category_pred = category_pred_v3*category_pred_v4
+            category_pred = category_pred_v4#*category_pred_v3
             category = self.category_indices_v4[np.argmax(category_pred)]
             
             prediction = None
