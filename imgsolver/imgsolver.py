@@ -9,13 +9,17 @@ import numpy as np
 class ImgSolver:
 
     def __init__(self):
-        self.category_indices = None
+        self.category_indices_v4 = None
+        self.category_indices_v3 = None
+        
         self.digit_indices = None
         self.operator_indices = None
         self.paren_indices = None
         self.trig_log_indices = None
 
-        self.category_model_path = 'models/category_class_v4'
+        self.category_model_path_v4 = 'models/category_class_v4'
+        self.category_model_path_v3 = 'models/category_class_v3'
+        
         self.digit_model_path = 'models/digit_class_v4'
         self.operator_model_path = 'models/operator_class_v4'
         self.paren_model_path = 'models/paren_class_v4'
@@ -24,14 +28,16 @@ class ImgSolver:
         self.model_ext = '.model.keras'
         self.indices_ext = '_indices.txt'
         
-        self.category_model = None
+        self.category_model_v4 = None
+        self.category_model_v3 = None
         self.digit_model = None
         self.operator_model = None
         self.paren_model = None
         self.trig_log_model = None
         
-        if os.path.exists(self.category_model_path+self.model_ext) and os.path.exists(self.digit_model_path+self.model_ext) and os.path.exists(self.operator_model_path+self.model_ext) and os.path.exists(self.trig_log_model_path+self.model_ext):
-            self.category_model:keras.models.Sequential = keras.models.load_model(self.category_model_path+self.model_ext)
+        if os.path.exists(self.category_model_path_v4+self.model_ext) and os.path.exists(self.category_model_path_v3+self.model_ext) and os.path.exists(self.digit_model_path+self.model_ext) and os.path.exists(self.operator_model_path+self.model_ext) and os.path.exists(self.trig_log_model_path+self.model_ext):
+            self.category_model_v4:keras.models.Sequential = keras.models.load_model(self.category_model_path_v4+self.model_ext)
+            self.category_model_v3:keras.models.Sequential = keras.models.load_model(self.category_model_path_v3+self.model_ext)
             self.digit_model:keras.models.Sequential = keras.models.load_model(self.digit_model_path+self.model_ext)
             self.operator_model:keras.models.Sequential = keras.models.load_model(self.operator_model_path+self.model_ext)
             self.paren_model:keras.models.Sequential = keras.models.load_model(self.paren_model_path+self.model_ext)
@@ -39,10 +45,14 @@ class ImgSolver:
         else:
             raise Exception("Some models are missing")
 
-        if os.path.exists(self.category_model_path+self.indices_ext) and os.path.exists(self.digit_model_path+self.indices_ext) and os.path.exists(self.operator_model_path+self.indices_ext) and os.path.exists(self.paren_model_path+self.indices_ext) and os.path.exists(self.trig_log_model_path+self.indices_ext):    
-            with open(self.category_model_path+self.indices_ext, 'r') as file:
+        if os.path.exists(self.category_model_path_v4+self.indices_ext) and os.path.exists(self.category_model_path_v3+self.indices_ext) and os.path.exists(self.digit_model_path+self.indices_ext) and os.path.exists(self.operator_model_path+self.indices_ext) and os.path.exists(self.paren_model_path+self.indices_ext) and os.path.exists(self.trig_log_model_path+self.indices_ext):    
+            with open(self.category_model_path_v4+self.indices_ext, 'r') as file:
                 content = file.read()
-                self.category_indices = eval(content)
+                self.category_indices_v4 = eval(content)
+            
+            with open(self.category_model_path_v3+self.indices_ext, 'r') as file:
+                content = file.read()
+                self.category_indices_v3 = eval(content)
 
             with open(self.digit_model_path+self.indices_ext, 'r') as file:
                 content = file.read()
@@ -70,10 +80,16 @@ class ImgSolver:
             plt.imshow(segment)
             plt.show()
             segment = np.expand_dims(segment, axis=0)
-            category_pred = self.category_model.predict(segment) 
-            category = self.category_indices[np.argmax(category_pred)]           
-            print('Category distribution: ', category_pred)
-            print('Category prediction: ', category, '\n')
+            category_pred_v4 = self.category_model_v4.predict(segment) 
+            category_pred_v3 = self.category_model_v3.predict(segment) 
+            category_v4 = self.category_indices_v4[np.argmax(category_pred_v4)]           
+            category_v3 = self.category_indices_v3[np.argmax(category_pred_v3)]           
+            print('Category distribution v4: ', category_pred_v4)
+            print('Category distribution v3: ', category_pred_v3)
+            print('Category prediction v4: ', category_v4, '\n')
+            print('Category prediction v3: ', category_v3, '\n')
+            category_pred = category_pred_v3*category_pred_v4
+            category = self.category_indices_v4[np.argmax(category_pred)]
             
             prediction = None
             pred_dist = None

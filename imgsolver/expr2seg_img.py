@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pylab as plt
-
+import skimage
 def expr2segm_img(img) -> list:
     img = cv2.medianBlur(img, 3)
 
@@ -10,9 +10,10 @@ def expr2segm_img(img) -> list:
     _, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     img = 255 - img
-
-    kernel = np.ones((2, 2), np.uint8)
-    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+    
+    # BIIIG BIG IMPACT WTF
+    img = skimage.morphology.skeletonize(img)
+    img = img.astype(np.uint8)*255
 
     _, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
