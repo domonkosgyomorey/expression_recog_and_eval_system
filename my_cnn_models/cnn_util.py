@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import keras
 import livelossplot as llp
+import os
 
 CATEGORICAL_CLASS_MODE = 'categorical'
 
@@ -278,7 +279,7 @@ def train_model(model, dataset_path, model_name, epoch, do_augmentation=False, e
     
     return model
 
-def train_models(models_and_names : dict[str, (models.Sequential, str)], epoch, enable_plotting=True):
+def train_models(models_and_names : dict[str, (models.Sequential, str)], path, epoch, enable_plotting=True):
     for name, (model, dataset_path) in models_and_names.items():
 
         print(f"Loading dateset for {name} model")
@@ -286,7 +287,7 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], epoch, 
         train_generator, validation_generator = create_train_validation_generator(dataset_path, class_mode=
             CATEGORICAL_CLASS_MODE, target_size=(45, 45))
 
-        save_class_indices(name + '_indices.txt', train_generator.class_indices)
+        save_class_indices(path+name + '_indices.txt', train_generator.class_indices)
 
         print(f"Dataset loaded for {name} model")
 
@@ -301,10 +302,16 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], epoch, 
 
         print(f"Training {name} model")
 
+        model_path = path+name+'.model'+'.keras'
+        
+        if os.path.exists(model_path):
+            print('Model is already exists')
+            model:models.Sequential = models.load_model(model_path)
+
         model.fit(train_generator,
                   steps_per_epoch=train_generator.samples // train_generator.batch_size,
                   validation_data=validation_generator,
-                  steps=validation_generator.samples // validation_generator.batch_size,
+                  validation_steps=validation_generator.samples // validation_generator.batch_size,
                   epochs=epoch,
                   callbacks=[
                       EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
@@ -314,5 +321,7 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], epoch, 
                           patience=3,
                           min_lr=0.00001
                       ),
-                      create_checkpoint(name),
+                      create_checkpoint(model_path),
                       plot_loss])
+        
+        return model

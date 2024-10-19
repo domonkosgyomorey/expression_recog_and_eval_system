@@ -4,8 +4,18 @@ A handwirtten math expression evaluation project for a course at my University
 
 ( Currently not working properly )
 
+**There is some advanced mechanisms such as:**
+- Automatic source file generator for training models
+- Automatic dependency installation via `setup.py`
+
+**Main folders**
+- `imgsolver` ( segmentation, and prediction )
+- `my_cnn_models` ( utilty for creating, training CNN networks )
+
+
+
 ## Dataset
-https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols
+https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols<br>
 The Dataset contains lots of different math symbols on a 45x45 picture
 When reading the dataset I do a data augmentation for better learning
 
@@ -25,6 +35,9 @@ Simple CNN network, with batch normalization
 
 ### Version 3
 A Simple restNet based model
+
+### Version 4
+VGG, restNet based model
 
 ## Current segmentation mechanism
 - median filter

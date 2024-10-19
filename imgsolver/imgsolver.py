@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 
-import imgsolver.expr_segmentation.expr2seg_img as e2s
+import imgsolver.expr2seg_img as e2s
 import keras
 import numpy as np
 
@@ -9,57 +9,91 @@ import numpy as np
 class ImgSolver:
 
     def __init__(self):
-        return
-        self.indices = None
-        if os.path.exists('number_symbol_class.model.keras'):
-            self.number_symbol_classifier = keras.models.load_model('number_symbol_class.model.keras')
-        else:
-            print('\"number symbol binary classifier\" model does not exists')
-            
-        if os.path.exists('number_class.model.keras'):
-            self.number_classifier = keras.models.load_model('number_class.model.keras')
-        else:
-            print('\"number classifier\" model does not exists')
-            
-        if os.path.exists('symbol_class.model.keras'):
-            self.symbol_classifier = keras.models.load_model('symbol_class.model.keras')
-        else:
-            print('\"symbol classifier\" model does not exists')
-            
-        with open('number_symbol_classifier_indices.txt', 'r') as file:
-            content = file.read()
-            self.num_sym_indices = eval(content)
-            
-        with open('number_class_indices.txt', 'r') as file:
-            content = file.read()
-            self.num_indices = eval(content)
+        self.category_indices = None
+        self.digit_indices = None
+        self.operator_indices = None
+        self.paren_indices = None
+        self.trig_log_indices = None
+
+        self.category_model_path = 'models/category_class_v4'
+        self.digit_model_path = 'models/digit_class_v4'
+        self.operator_model_path = 'models/operator_class_v4'
+        self.paren_model_path = 'models/paren_class_v4'
+        self.trig_log_model_path = 'models/trig_log_class_v4'
         
-        with open('symbol_class_indices.txt', 'r') as file:
-            content = file.read()
-            self.sym_indices = eval(content)
+        self.model_ext = '.model.keras'
+        self.indices_ext = '_indices.txt'
         
+        self.category_model = None
+        self.digit_model = None
+        self.operator_model = None
+        self.paren_model = None
+        self.trig_log_model = None
+        
+        if os.path.exists(self.category_model_path+self.model_ext) and os.path.exists(self.digit_model_path+self.model_ext) and os.path.exists(self.operator_model_path+self.model_ext) and os.path.exists(self.trig_log_model_path+self.model_ext):
+            self.category_model:keras.models.Sequential = keras.models.load_model(self.category_model_path+self.model_ext)
+            self.digit_model:keras.models.Sequential = keras.models.load_model(self.digit_model_path+self.model_ext)
+            self.operator_model:keras.models.Sequential = keras.models.load_model(self.operator_model_path+self.model_ext)
+            self.paren_model:keras.models.Sequential = keras.models.load_model(self.paren_model_path+self.model_ext)
+            self.trig_log_model:keras.models.Sequential = keras.models.load_model(self.trig_log_model_path+self.model_ext)
+        else:
+            raise Exception("Some models are missing")
+
+        if os.path.exists(self.category_model_path+self.indices_ext) and os.path.exists(self.digit_model_path+self.indices_ext) and os.path.exists(self.operator_model_path+self.indices_ext) and os.path.exists(self.paren_model_path+self.indices_ext) and os.path.exists(self.trig_log_model_path+self.indices_ext):    
+            with open(self.category_model_path+self.indices_ext, 'r') as file:
+                content = file.read()
+                self.category_indices = eval(content)
+
+            with open(self.digit_model_path+self.indices_ext, 'r') as file:
+                content = file.read()
+                self.digit_indices = eval(content)
+
+            with open(self.operator_model_path+self.indices_ext, 'r') as file:
+                content = file.read()
+                self.operator_indices = eval(content)
+            
+            with open(self.paren_model_path+self.indices_ext, 'r') as file:
+                content = file.read()
+                self.paren_indices = eval(content)
+            
+            with open(self.trig_log_model_path+self.indices_ext, 'r') as file:
+                content = file.read()
+                self.trig_log_indices = eval(content)
+        else:
+            raise Exception('Missing indices files')
 
     def eval(self, img):
         seg_and_x = e2s.expr2segm_img(img)
-        model : keras.models.Sequential = keras.models.load_model('number_classification_v2.model.keras')
-
         sorted_seg = map(lambda x: x[0], sorted(seg_and_x, key=lambda x: x[1]))
         for segment in sorted_seg:
             segment = segment.astype('float32')
-            #plt.imshow(segment)
-            #plt.show()
+            plt.imshow(segment)
+            plt.show()
             segment = np.expand_dims(segment, axis=0)
-            predicted_name = model.predict(segment)
-            """
-            class_prediction = self.number_symbol_classifier.predict(segment)
-            predicted_class_name = self.num_sym_indices[np.argmax(class_prediction, axis=-1)[0]]
-            print("Predicted class: ", predicted_class_name)
+            category_pred = self.category_model.predict(segment) 
+            category = self.category_indices[np.argmax(category_pred)]           
+            print('Category distribution: ', category_pred)
+            print('Category prediction: ', category, '\n')
             
-            if predicted_class_name == 'digit':
-                prediction = self.number_classifier.predict(segment)
-                predicted_name = self.num_indices[np.argmax(prediction, axis=-1)[0]]
-            elif predicted_class_name == 'operator':
-                prediction = self.symbol_classifier.predict(segment)
-                predicted_name = self.sym_indices[np.argmax(prediction, axis=-1)[0]]
-            """
-            print("Predicted: ", predicted_name)
+            prediction = None
+            pred_dist = None
+            if category=='digit':
+                pred_dist = self.digit_model.predict(segment)
+                prediction = self.digit_indices[np.argmax(pred_dist)]
+            elif category=='operator':
+                pred_dist = self.operator_model.predict(segment)
+                prediction = self.operator_indices[np.argmax(self.operator_model.predict(segment))]
+                if prediction == ',':
+                    pred_dist = [0.5]
+                    prediction = '1'
+            elif category=='paren':
+                pred_dist = self.paren_model.predict(segment)
+                prediction = self.paren_indices[np.argmax(self.paren_model.predict(segment))]
+            elif category=='trig_log':
+                pred_dist = self.trig_log_model.predict(segment)
+                prediction = self.trig_log_indices[np.argmax(self.trig_log_model.predict(segment))]
+            
+            print('Prediction distribution: ', pred_dist)
+            print('Prediction: ', prediction)
+            print('Confidence: ', np.max(pred_dist)*np.max(category_pred))
+
