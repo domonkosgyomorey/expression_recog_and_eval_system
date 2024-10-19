@@ -12,12 +12,27 @@ A handwirtten math expression evaluation project for a course at my University
 - `imgsolver` ( segmentation, and prediction )
 - `my_cnn_models` ( utilty for creating, training CNN networks )
 
-
-
 ## Dataset
 https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols<br>
 The Dataset contains lots of different math symbols on a 45x45 picture
 When reading the dataset I do a data augmentation for better learning
+
+**Final Dataset Structure**
+- dataset/digit/`(0..9)`/....png
+- dataset/operator/`( +,-,times,div )`/....png
+- dataset/paren/`( (,) )`/....png
+- dataset/trig_log/`( sin,cos,tan,log )`/....png
+
+**Dataset Transformation**
+- With `dataset_trainsform.ps1` scirpt, I limited each class of the dataset to **2000**
+
+**Script Usage**
+- The `source` var what we need to change when we limiting the number of images in a class
+
+**Recommendations to install and setup the dataset folder**
+- Firstly, I recommend to use the  [7-Zip](https://www.7-zip.org/) for faster unzipping folder (much much faster)
+- Secondly, I recommend to try not to copy the file, but just cut and paste it into an another directory
+- Thirdly, I recommend to compress the dataset before we move it to another folder
 
 ## Current models
 
@@ -43,6 +58,7 @@ VGG, restNet based model
 - median filter
 - morphology operation
 - thresholding
+- skeletonizing
 - finding contours
 - creating a bounding box
 - resizeing the ROI image
