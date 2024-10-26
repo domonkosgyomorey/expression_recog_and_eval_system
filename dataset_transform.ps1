@@ -1,5 +1,5 @@
-$source = "dataset/trig_log"
-$maxFiles = 2000
+$source = "dataset/paren"
+$maxFiles = 5000
 
 Get-ChildItem -Directory $source | ForEach-Object {
     $subfolder = $_.FullName

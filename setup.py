@@ -8,14 +8,22 @@ else:
     long_description = ''
 
 requirements = [
+    'onnx-tf',
+    'onnxruntime',
+    'intel-tensorflow',
+    'intel-openmp',
     'numpy',
-    'tensorflow',
+    'scikit-learn',
+    'scikit-image',
+    'ipython',
     'keras',
     'opencv-python',
     'matplotlib',
     'livelossplot',
     'sympy',
-    'scikit-learn'
+    'scikit-learn',
+    'seaborn',
+    'tensorflow',
 ]
 
 setup(

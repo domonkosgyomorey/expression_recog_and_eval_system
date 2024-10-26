@@ -20,9 +20,9 @@ cnnu.train_models(models, '{model_dst_path}/', {epoch})
     with open(init_path, 'w+') as fp:
         pass
 
-model_names = ['digit', 'paren', 'operator', 'trig_log', 'category']
-num_classes = [10, 2, 5, 4, 4]
-dataset_paths = ['dataset/digit', 'dataset/paren', 'dataset/operator','dataset/trig_log', 'dataset']
+model_names = ['digit', 'paren', 'operator', 'category']
+num_classes = [10, 2, 5, 3]
+dataset_paths = ['dataset/digit', 'dataset/paren', 'dataset/operator', 'dataset']
 create_model_source(1, model_names, num_classes, dataset_paths, 'models', 20)
 create_model_source(2, model_names, num_classes, dataset_paths, 'models', 20)
 create_model_source(3, model_names, num_classes, dataset_paths, 'models', 20)

@@ -21,7 +21,6 @@ When reading the dataset I do a data augmentation for better learning
 - dataset/digit/`(0..9)`/....png
 - dataset/operator/`( +,-,times,div )`/....png
 - dataset/paren/`( (,) )`/....png
-- dataset/trig_log/`( sin,cos,tan,log )`/....png
 
 **Dataset Transformation**
 - With `dataset_trainsform.ps1` scirpt, I limited each class of the dataset to **2000**
@@ -36,11 +35,12 @@ When reading the dataset I do a data augmentation for better learning
 
 ## Current models
 
-- A binary classification model which recognize if a character is a number or a math operator
+- A binary classification model which recognize if the character is a number or a math operator or a parenthesis
 - A number classification model
 - A math operator classification model
+- A paren classification model
 
-Each model have three version.
+Each model have four version.
 
 ### Version 1
 Simple CNN network, without batch normalization
@@ -56,13 +56,13 @@ VGG, restNet based model
 
 ## Current segmentation mechanism
 - median filter
-- morphology operation
 - thresholding
-- skeletonizing
+- skeletonizing (This update was very impactful)
+- morphology operation(thickening lines) (I think about this)
 - finding contours
 - creating a bounding box
 - resizeing the ROI image
-- sorting the segment based on X coordinate
+- sorting the segment based on X,Y coordinate
 
 ## Future plans
 - Better segmentation mechnism

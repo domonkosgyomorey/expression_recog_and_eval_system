@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-import matplotlib.pylab as plt
 import skimage
 def expr2segm_img(img) -> list:
     img = cv2.medianBlur(img, 3)
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+    # inverting the image to perform skeletonization and contour findig
     img = 255 - img
     
     # BIIIG BIG IMPACT WTF
@@ -22,7 +22,8 @@ def expr2segm_img(img) -> list:
     for c in contours:
         area = cv2.contourArea(c)
         x, y, w, h = cv2.boundingRect(c)
-        if True:#50 < area < 2000:
+        if True:
+        #if 50 < area < 2000:
             segment = 255 - img[y:y + h, x:x + w]
             aspect_ratio = w / h
             if aspect_ratio > 1:
@@ -44,6 +45,6 @@ def expr2segm_img(img) -> list:
             rs[:, :, 1] = blank
             rs[:, :, 2] = blank
             rs = rs[:, :, 0] / 255.0
-            segments.append((rs, x))
+            segments.append((rs, x, y, w, h))
             
     return segments

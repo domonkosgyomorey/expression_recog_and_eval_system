@@ -1,1 +1,1 @@
-{0: 'digit', 1: 'operator', 2: 'paren', 3: 'trig_log'}
+{0: 'digit', 1: 'operator', 2: 'paren'}

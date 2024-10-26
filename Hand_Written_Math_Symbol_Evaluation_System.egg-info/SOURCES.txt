@@ -5,6 +5,9 @@ Hand_Written_Math_Symbol_Evaluation_System.egg-info/SOURCES.txt
 Hand_Written_Math_Symbol_Evaluation_System.egg-info/dependency_links.txt
 Hand_Written_Math_Symbol_Evaluation_System.egg-info/requires.txt
 Hand_Written_Math_Symbol_Evaluation_System.egg-info/top_level.txt
+expression_parser/__init__.py
+expression_parser/expr_parser.py
+expression_parser/expression_char.py
 imgsolver/__init__.py
 imgsolver/expr2seg_img.py
 imgsolver/imgsolver.py

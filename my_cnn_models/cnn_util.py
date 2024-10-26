@@ -6,10 +6,12 @@ from keras.src.callbacks import EarlyStopping, ReduceLROnPlateau
 import cv2
 import numpy as np
 import keras
-import matplotlib
-matplotlib.use('Agg')
 import livelossplot as llp
 import os
+from sklearn.metrics import (classification_report, confusion_matrix, 
+                           roc_curve, auc, precision_recall_curve, 
+                           average_precision_score)
+import seaborn as sns
 
 CATEGORICAL_CLASS_MODE = 'categorical'
 
@@ -167,7 +169,7 @@ def residual_block(x, filters, kernel_size=3, stride=1):
     y = layers.Activation("relu")(y)
     y = layers.Conv2D(filters, kernel_size, padding="same")(y)
     y = layers.BatchNormalization()(y)
-
+    
     if stride != 1 or x.shape[-1] != filters:
         shortcut = layers.Conv2D(filters, 1, strides=stride, padding="same")(x)
         shortcut = layers.BatchNormalization()(shortcut)
@@ -271,7 +273,7 @@ def train_model(model: models.Model, dataset_path, model_name, epoch, do_augment
             monitor='val_loss',
             factor=0.5,
             patience=3,
-            min_lr=0.00001
+            min_lr=0.0000001
         ),
         create_checkpoint(model_name)
     ]
@@ -296,7 +298,8 @@ def train_model(model: models.Model, dataset_path, model_name, epoch, do_augment
 
 def train_models(models_and_names : dict[str, (models.Sequential, str)], path, epoch, enable_plotting=True):
     for name, (model, dataset_path) in models_and_names.items():
-
+        model.summary()
+        
         print(f"Loading dateset for {name} model")
 
         train_generator, validation_generator = create_train_validation_generator(dataset_path, class_mode=
@@ -329,7 +332,7 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
                 monitor='val_loss',
                 factor=0.5,
                 patience=3,
-                min_lr=0.00001
+                min_lr=0.0000001
             ),
             create_checkpoint(model_path),
         ]
@@ -344,4 +347,143 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
                   callbacks=callbacks
                   )
         
-        return model
+    return model
+    
+def validate_models(model, dataset_path):
+    model:keras.Sequential = model 
+    _, validation_generator = create_train_validation_generator(dataset_path, class_mode=
+        CATEGORICAL_CLASS_MODE, target_size=(45, 45))
+    val_results = model.evaluate(validation_generator, verbose=1)
+    metric_names = model.metrics_names
+    print("\nValidation metrics:")
+    for name, value in zip(metric_names, val_results):
+        print(f'{name}: {value:.4f}')
+    
+    print("\nPredictions")
+    validation_generator.reset()
+    y_pred_proba = model.predict(validation_generator, verbose=1)
+    
+    validation_generator.reset()
+    y_true = []
+    for _ in range(len(validation_generator)):
+        _, batch_labels = next(validation_generator)
+        y_true.extend(batch_labels)
+    y_true = np.array(y_true)
+    
+    if y_true.shape[-1] > 1:
+        y_true_classes = np.argmax(y_true, axis=1)
+        y_pred_classes = np.argmax(y_pred_proba, axis=1)
+    else:
+        y_true_classes = y_true
+        y_pred_classes = (y_pred_proba > 0.5).astype(int)
+        
+    print("Classification riport:")
+    class_report = classification_report(y_true_classes, y_pred_classes)
+    print(class_report)
+    
+    def plot_learning_curves():
+        try:
+            history = model.history.history
+            if history:
+                plt.figure(figsize=(12, 4))
+                
+                plt.subplot(1, 2, 1)
+                plt.plot(history['accuracy'], label='Training')
+                plt.plot(history['val_accuracy'], label='Validation')
+                plt.title('Model Accuracy')
+                plt.xlabel('Epoch')
+                plt.ylabel('Accuracy')
+                plt.legend()
+                
+                plt.subplot(1, 2, 2)
+                plt.plot(history['loss'], label='Training')
+                plt.plot(history['val_loss'], label='Validation')
+                plt.title('Model Loss')
+                plt.xlabel('Epoch')
+                plt.ylabel('Loss')
+                plt.legend()
+                
+                plt.tight_layout()
+                plt.show()
+        except:
+            print("No model history")
+    
+    def plot_confusion_matrix():
+        plt.figure(figsize=(10, 8))
+        cm = confusion_matrix(y_true_classes, y_pred_classes)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        plt.title('Confusion Matrix')
+        plt.ylabel('Real')
+        plt.xlabel('Predicted')
+        plt.show()
+        
+        plt.figure(figsize=(10, 8))
+        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        sns.heatmap(cm_normalized, annot=True, fmt='.2f', cmap='Blues')
+        plt.title('Normalized Confusion Matrix')
+        plt.ylabel('Real')
+        plt.xlabel('Predicted')
+        plt.show()
+    
+    def plot_roc_curves():
+        plt.figure(figsize=(10, 8))
+        
+        if y_true.shape[-1] > 1:
+            n_classes = y_true.shape[-1]
+            for i in range(n_classes):
+                fpr, tpr, _ = roc_curve(y_true[:, i], y_pred_proba[:, i])
+                roc_auc = auc(fpr, tpr)
+                plt.plot(fpr, tpr, label=f'Class {i} (AUC = {roc_auc:.2f})')
+        else:
+            fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
+            roc_auc = auc(fpr, tpr)
+            plt.plot(fpr, tpr, label=f'ROC (AUC = {roc_auc:.2f})')
+        
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC')
+        plt.legend(loc="lower right")
+        plt.show()
+    
+    def plot_precision_recall_curve():
+        plt.figure(figsize=(10, 8))
+        
+        if y_true.shape[-1] > 1:
+            n_classes = y_true.shape[-1]
+            for i in range(n_classes):
+                precision, recall, _ = precision_recall_curve(y_true[:, i], y_pred_proba[:, i])
+                avg_precision = average_precision_score(y_true[:, i], y_pred_proba[:, i])
+                plt.plot(recall, precision, label=f'Class {i} (AP = {avg_precision:.2f})')
+        else:
+            precision, recall, _ = precision_recall_curve(y_true, y_pred_proba)
+            avg_precision = average_precision_score(y_true, y_pred_proba)
+            plt.plot(recall, precision, label=f'PR (AP = {avg_precision:.2f})')
+        
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall')
+        plt.legend(loc="lower left")
+        plt.show()
+    
+    plot_learning_curves()
+    plot_confusion_matrix()
+    plot_roc_curves()
+    plot_precision_recall_curve()
+    
+    metrics = {
+        'base_metrics': dict(zip(metric_names, val_results)),
+        'classification_report': class_report,
+        'confusion_matrix': confusion_matrix(y_true_classes, y_pred_classes)
+    }
+    
+    if y_true.shape[-1] > 1:
+        metrics['roc_auc'] = {
+            f'class_{i}': auc(
+                *roc_curve(y_true[:, i], y_pred_proba[:, i])[:2]
+            ) for i in range(y_true.shape[-1])
+        }
+    else:
+        metrics['roc_auc'] = auc(*roc_curve(y_true, y_pred_proba)[:2])
