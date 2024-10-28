@@ -1,7 +1,0 @@
-expression_parser
-imgsolver
-my_cnn_models
-v1_model_source
-v2_model_source
-v3_model_source
-v4_model_source

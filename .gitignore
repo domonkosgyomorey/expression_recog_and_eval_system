@@ -1,4 +1,4 @@
-dataset/*
-.venv/*
-dataset.zip
-__pycache__/*
+model_trainer/dataset/*
+model_trainer/.venv/*
+model_trainer/my_cnn_models/__pycache__/*
+imgsolver/__pycache__/*

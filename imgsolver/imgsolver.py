@@ -43,7 +43,7 @@ class ImgSolver:
             raise Exception('Missing indices files')
 
 
-    def eval(self, img, class2charCvt: Callable[[str], str]):
+    def eval(self, img):
         seg_xywh = e2s.expr2segm_img(img)
         sorted_seg = sorted(seg_xywh, key=lambda x: x[1])
                 
@@ -64,14 +64,23 @@ class ImgSolver:
             prediction = self.models[category][ImgSolver.LUT_IDX][np.argmax(pred_dist)]            
             
             print('Prediction distribution: ', pred_dist)
-            prediction = class2charCvt(prediction)
+            prediction = self.cvt_str2op(prediction)
             print('Prediction: ', prediction)
             print('Confidence: ', np.max(pred_dist)*np.max(category_pred))
             
             
             expression_chars.append((prediction, x, y, w, h))
-        return expression_chars
-
+        expression =  "".join(list(map(lambda x: x[0], expression_chars)))
+        print("[LOG]: ImgSolver, found: "+expression)
+        return expression
+        
+    def cvt_str2op(self, predicted_class:str) -> str:
+        if predicted_class == "times":
+            return "*"
+        elif predicted_class == "div":
+            return "/"
+        return predicted_class
+    
     def read_indices(self, path: str):
         with open(path, 'r') as fp:
             return eval(fp.read())
