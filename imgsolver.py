@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 
-import imgsolver.expr2seg_img as e2s
+import expr2seg_img as e2s
 import keras
 import numpy as np
 from typing import Callable
@@ -12,11 +12,11 @@ class ImgSolver:
     MODEL_IDX: int = 0
     LUT_IDX: int = 1
 
-    def __init__(self, version: int = 4):
-        self.category_model_path = f'models/category_class_v{version}'
-        self.digit_model_path = f'models/digit_class_v{version}'
-        self.operator_model_path = f'models/operator_class_v{version}'
-        self.paren_model_path = f'models/paren_class_v{version}'
+    def __init__(self, model_version: int = 4):
+        self.category_model_path = f'models/category_class_v{model_version}'
+        self.digit_model_path = f'models/digit_class_v{model_version}'
+        self.operator_model_path = f'models/operator_class_v{model_version}'
+        self.paren_model_path = f'models/paren_class_v{model_version}'
         
         self.model_ext = '.model.keras'
         self.indices_ext = '_indices.txt'
