@@ -12,6 +12,7 @@ from sklearn.metrics import (classification_report, confusion_matrix,
                            roc_curve, auc, precision_recall_curve, 
                            average_precision_score)
 import seaborn as sns
+import pandas as pd
 
 CATEGORICAL_CLASS_MODE = 'categorical'
 
@@ -349,7 +350,7 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
         
     return model
     
-def validate_models(model, dataset_path):
+def validate_models(model, dataset_path, metric_path):
     model:keras.Sequential = model 
     _, validation_generator = create_train_validation_generator(dataset_path, class_mode=
         CATEGORICAL_CLASS_MODE, target_size=(45, 45))
@@ -358,6 +359,8 @@ def validate_models(model, dataset_path):
     print("\nValidation metrics:")
     for name, value in zip(metric_names, val_results):
         print(f'{name}: {value:.4f}')
+    
+    metrics_df = pd.DataFrame(val_results, index=metric_names, columns=["Value"])
     
     print("\nPredictions")
     validation_generator.reset()
@@ -380,6 +383,18 @@ def validate_models(model, dataset_path):
     print("Classification riport:")
     class_report = classification_report(y_true_classes, y_pred_classes)
     print(class_report)
+    
+    report_data = classification_report(y_true_classes, y_pred_classes, output_dict=True)
+    report_df = pd.DataFrame(report_data).transpose()
+
+    cm = confusion_matrix(y_true_classes, y_pred_classes)
+    cm_df = pd.DataFrame(cm, index=[f"True_{i}" for i in range(cm.shape[0])],
+                         columns=[f"Pred_{i}" for i in range(cm.shape[1])])
+    
+    with pd.ExcelWriter(metric_path, engine='openpyxl') as writer:
+        metrics_df.to_excel(writer, sheet_name='Validation Metrics')
+        report_df.to_excel(writer, sheet_name='Classification Report')
+        cm_df.to_excel(writer, sheet_name='Confusion Matrix')
     
     def plot_learning_curves():
         try:
