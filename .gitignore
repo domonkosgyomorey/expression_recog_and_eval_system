@@ -1,4 +1,2 @@
-model_trainer/dataset/*
-model_trainer/.venv/*
-model_trainer/my_cnn_models/__pycache__/*
-imgsolver/__pycache__/*
+imgsolver/model_trainer/dataset/*
+imgsolver/model_trainer/my_cnn_models/__pycache__
