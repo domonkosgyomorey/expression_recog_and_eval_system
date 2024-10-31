@@ -9,11 +9,13 @@ import keras
 import livelossplot as llp
 import os
 import random
+import datetime
 from sklearn.metrics import (classification_report, confusion_matrix, 
                            roc_curve, auc, precision_recall_curve, 
                            average_precision_score)
 import seaborn as sns
 import pandas as pd
+from collections import Counter
 
 CATEGORICAL_CLASS_MODE = 'categorical'
 
@@ -21,7 +23,7 @@ def create_checkpoint(file_path):
     return callbacks.ModelCheckpoint(file_path, save_best_only=True, monitor='val_loss', mode='min', save_weights_only=False, save_freq='epoch')
 
 def create_train_validation_generator(dataset_path, rescale=1.0/255.0,
-                                      validation_split=0.3,
+                                      validation_split=0.15,
                                       target_size=(224, 224),
                                       batch_size=32,
                                       class_mode='categorical'):
@@ -35,7 +37,7 @@ def create_train_validation_generator(dataset_path, rescale=1.0/255.0,
         color_mode='grayscale',
         class_mode=class_mode,
         subset='training',
-        shuffle=True
+        shuffle=True,
     )
 
     validation_generator = data_gen.flow_from_directory(
@@ -45,33 +47,40 @@ def create_train_validation_generator(dataset_path, rescale=1.0/255.0,
         color_mode='grayscale',
         class_mode=class_mode,
         subset='validation',
-        shuffle=False   
+        shuffle=False
     )
     
     return train_generator, validation_generator
 
 def thickening_line(img):
+    kernel = np.ones((2, 2), np.uint8)
     kernel = np.ones((2, 2))
-    return cv2.erode(img, kernel)    
+    img = img = cv2.erode(img, kernel)
+    if len(img.shape) == 2:  
+        img = np.expand_dims(img, axis=-1)
+    return img
 
 def create_train_validation_generator_augmented(dataset_path, rescale=1.0/255.0,
-                                      validation_split=0.3,
+                                      validation_split=0.15,
                                       target_size=(45, 45),
                                       batch_size=32,
                                       class_mode='categorical'):
     data_gen = ImageDataGenerator(
         rescale=rescale,
         validation_split=validation_split,
-        rotation_range=10,
-        preprocessing_function=thickening_line
+        #rotation_range=5,
+       # preprocessing_function=thickening_line
     )
+    
+    
     train_generator = data_gen.flow_from_directory(
         dataset_path,
         target_size=target_size,
         batch_size=batch_size,
         color_mode='grayscale',
         class_mode=class_mode,
-        subset='training'
+        subset='training',
+        shuffle=True,
     )
 
     validation_generator = data_gen.flow_from_directory(
@@ -80,18 +89,20 @@ def create_train_validation_generator_augmented(dataset_path, rescale=1.0/255.0,
         batch_size=batch_size,
         color_mode='grayscale',
         class_mode=class_mode,
-        subset='validation')
+        subset='validation',
+        shuffle=True)
     
     return train_generator, validation_generator
 
 def stratified_batch_generator(data_generator, batch_size):
-    classes = data_generator.class_indices
-    class_samples = {k: [] for k in classes.keys()}
+    class_indices = {v: k for k, v in data_generator.class_indices.items()}
+    class_samples = {v: [] for v in class_indices.keys()}
     
     for i in range(len(data_generator)):
-        batch_data, batch_labels = data_generator.next()
-        for label in batch_labels:
-            class_samples[data_generator.classes[i]].append(batch_data[i])
+        batch_data, batch_labels = next(data_generator)
+        for j, label in enumerate(batch_labels):
+            label_index = np.argmax(label)
+            class_samples[label_index].append(batch_data[j])
     
     while True:
         minibatch = []
@@ -103,10 +114,6 @@ def stratified_batch_generator(data_generator, batch_size):
         yield np.array(minibatch), np.array([class_key for class_key in class_samples.keys()])
 
 
-def compute_class_weights(data_generator: DirectoryIterator):
-    total_samples = len(data_generator.classes)
-    class_counts = np.bincount(data_generator.classes)
-    return {i: total_samples / (len(class_counts)*count) for i, count in enumerate(class_counts)}
     
 def save_class_indices(file_path, class_indices):
     with open(file_path, 'w') as f:
@@ -271,48 +278,6 @@ def create_model_v4(num_classes) -> models.Sequential:
     
     return model
 
-def train_model(model: models.Model, dataset_path, model_name, epoch, do_augmentation=False, enable_plotting=True):
-    model.summary()
-    
-    train_generator, validation_generator = create_train_validation_generator(dataset_path, class_mode=
-            CATEGORICAL_CLASS_MODE, target_size=(45, 45))
-        
-    stratified_train = stratified_batch_generator(train_generator, train_generator.batch_size)     
-           
-    save_class_indices(model_name+'_indices.txt', train_generator.class_indices)
-    plot_loss = llp.PlotLossesKeras()
-    
-    history = None
-    
-    callbacks = [
-        EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
-        ReduceLROnPlateau(
-            monitor='val_loss',
-            factor=0.5,
-            patience=3,
-            min_lr=0.0000001
-        ),
-        create_checkpoint(model_name)
-    ]
-    
-    if enable_plotting:
-            callbacks.append(plot_loss)
-            
-    history = model.fit(
-        stratified_train,
-        steps_per_epoch=train_generator.samples // train_generator.batch_size,
-        validation_data=validation_generator,
-        validation_steps=validation_generator.samples // validation_generator.batch_size,
-        epochs=epoch,
-        class_weight=compute_class_weights(train_generator),
-        callbacks=callbacks
-    )
-        
-    write_result_statistics(model, validation_generator, validation_generator.class_indices)
-    plot_history(history)
-    
-    return model
-
 def train_models(models_and_names : dict[str, (models.Sequential, str)], path, epoch, enable_plotting=True):
     for name, (model, dataset_path) in models_and_names.items():
         model.summary()
@@ -322,10 +287,11 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
         train_generator, validation_generator = create_train_validation_generator(dataset_path, class_mode=
             CATEGORICAL_CLASS_MODE, target_size=(45, 45))
         
-        stratified_train = stratified_batch_generator(train_generator, train_generator.batch_size)
-
-        save_class_indices(path+name + '_indices.txt', train_generator.class_indices)
-
+        counter = Counter(train_generator.classes)                          
+        max_val = float(max(counter.values()))       
+        class_weights = {class_id : max_val/num_images for class_id, num_images in counter.items()}                     
+        
+        
         print(f"Dataset loaded for {name} model")
 
         optimizer = keras.optimizers.Adam(learning_rate=0.001)
@@ -338,41 +304,41 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
         )
 
         print(f"Training {name} model")
-
-        model_path = path+name+'.model'+'.keras'
-        
+        model_path = path+name+str(datetime.datetime.now().date())+'.model'+'.keras'
         if os.path.exists(model_path):
             print('Model is already exists')
             model:models.Sequential = models.load_model(model_path)
 
+        save_class_indices(path+name+str(datetime.datetime.now().date())+'_indices.txt', train_generator.class_indices)
+        
         callbacks = [
-            EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
+            #EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True),
             ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=0.5,
                 patience=3,
-                min_lr=0.0000001
+                min_lr=0.000001
             ),
             create_checkpoint(model_path),
         ]
         if enable_plotting:
             callbacks.append(plot_loss)
         
-        model.fit(stratified_train,
+        model.fit(train_generator,
                   steps_per_epoch=train_generator.samples // train_generator.batch_size,
                   validation_data=validation_generator,
                   validation_steps=validation_generator.samples // validation_generator.batch_size,
                   epochs=epoch,
-                  class_weight=compute_class_weights(train_generator),
-                  callbacks=callbacks
+                  callbacks=callbacks,
+                  class_weight=class_weights
                   )
         
     return model
     
-def validate_models(model, dataset_path, metric_path):
+def validate_models(model, dataset_path, metric_path = None):
     model:keras.Sequential = model 
     _, validation_generator = create_train_validation_generator(dataset_path, class_mode=
-        CATEGORICAL_CLASS_MODE, target_size=(45, 45))
+        CATEGORICAL_CLASS_MODE, target_size=(45, 45), validation_split=0.20)
     val_results = model.evaluate(validation_generator, verbose=1)
     metric_names = model.metrics_names
     print("\nValidation metrics:")
@@ -410,10 +376,11 @@ def validate_models(model, dataset_path, metric_path):
     cm_df = pd.DataFrame(cm, index=[f"True_{i}" for i in range(cm.shape[0])],
                          columns=[f"Pred_{i}" for i in range(cm.shape[1])])
     
-    with pd.ExcelWriter(metric_path, engine='openpyxl') as writer:
-        metrics_df.to_excel(writer, sheet_name='Validation Metrics')
-        report_df.to_excel(writer, sheet_name='Classification Report')
-        cm_df.to_excel(writer, sheet_name='Confusion Matrix')
+    if metric_path is not None:
+        with pd.ExcelWriter(metric_path, engine='openpyxl') as writer:
+            metrics_df.to_excel(writer, sheet_name='Validation Metrics')
+            report_df.to_excel(writer, sheet_name='Classification Report')
+            cm_df.to_excel(writer, sheet_name='Confusion Matrix')
     
     def plot_learning_curves():
         try:

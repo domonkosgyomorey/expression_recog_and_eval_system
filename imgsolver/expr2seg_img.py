@@ -19,6 +19,9 @@ def expr2segm_img(img) -> list:
     contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     segments = []
 
+    #TODO: convert contours into image
+    #TODO: store original size
+
     for c in contours:
         area = cv2.contourArea(c)
         x, y, w, h = cv2.boundingRect(c)

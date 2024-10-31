@@ -1,6 +1,6 @@
 import os
 
-common_import = 'import my_cnn_models.cnn_util as cnnu'
+common_import = 'import imgsolver.model_trainer.my_cnn_models.cnn_util as cnnu'
 
 def create_model_source(version: int, names: list[str], num_classes: list[int], dataset_paths: list[str], model_dst_path: str, epoch: int):
     folder_name = f'v{version}_model_source'
@@ -8,7 +8,7 @@ def create_model_source(version: int, names: list[str], num_classes: list[int], 
 models = {{
     '{name}_class_v{version}' : (cnnu.create_model_v{version}({num_class}), '{dataset_path}'),
 }}
-cnnu.train_models(models, '{model_dst_path}/', {epoch})
+cnnu.train_models(models, '{model_dst_path}/', {epoch}, enable_plotting=False)
     """ for name, num_class, dataset_path in zip(names, num_classes, dataset_paths)]
     for source, name in zip(sources, names):
         file_path = f'{folder_name}/{name}_model_v{version}.py'

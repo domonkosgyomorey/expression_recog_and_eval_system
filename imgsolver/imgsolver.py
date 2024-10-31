@@ -3,6 +3,7 @@ import keras
 import numpy as np
 import sympy
 from imgsolver import expr2seg_img as e2s
+import matplotlib.pylab as plt
 
 class ImgSolver:
     
@@ -12,10 +13,10 @@ class ImgSolver:
     def __init__(self, models_path, model_version: int = 4, verbose: bool = False):
         self.verbose = verbose
         
-        self.category_model_path = models_path + f'/category_class_v{model_version}'
-        self.digit_model_path = models_path + f'/digit_class_v{model_version}'
-        self.operator_model_path = models_path + f'/operator_class_v{model_version}'
-        self.paren_model_path = models_path + f'/paren_class_v{model_version}'
+        self.category_model_path = models_path + f'/category_class_v{model_version}2024-10-31'
+        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-10-31'
+        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-10-31'
+        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-10-31'
         
         self.model_ext = '.model.keras'
         self.indices_ext = '_indices.txt'
@@ -44,7 +45,7 @@ class ImgSolver:
             self.models['operator'] = [keras.models.load_model(self.operator_model_path + self.model_ext), None]
             self.models['paren'] = [keras.models.load_model(self.paren_model_path + self.model_ext), None]
         else:
-            raise Exception("Some models are missing ASD")
+            raise Exception("Some models are missing")
 
         if all(map(os.path.exists, indices_paths)):
             self.models['category'][ImgSolver.LUT_IDX] = self.read_indices(self.category_model_path + self.indices_ext)
@@ -58,7 +59,13 @@ class ImgSolver:
         expression = []
         try:
             seg_xywh = e2s.expr2segm_img(img)
+            
+            #TODO: sort segments based on y and then x, with some eps threshold
             sorted_seg = sorted(seg_xywh, key=lambda x: x[1])
+            
+            #for s in sorted_seg:
+            #    plt.imshow(s[0])
+            #    plt.show()
             
             segments = [np.expand_dims(segment.astype('float32'), axis=0) for segment, x, y, w, h in sorted_seg]
             batch_segments = np.vstack(segments)
@@ -92,6 +99,8 @@ class ImgSolver:
             if self.verbose:
                 print("[LOG]: ImgSolver, found:", expression)
             
+            
+            #TODO: Analize the predicted segments to find fraction, and exponent
             return (expression, sympy.simplify(expression))
         except Exception as e:
             return (f"Error: Cannot evaulate this: "+str(expression), None)
@@ -101,6 +110,8 @@ class ImgSolver:
             return "*"
         elif predicted_class == "div":
             return "/"
+        elif predicted_class == ',':
+            return "."
         return predicted_class
     
     def read_indices(self, path: str):

@@ -1,4 +1,4 @@
-$source = "dataset/paren"
+$source = "dataset/digit"
 $maxFiles = 5000
 
 Get-ChildItem -Directory $source | ForEach-Object {
