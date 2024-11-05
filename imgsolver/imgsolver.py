@@ -13,10 +13,10 @@ class ImgSolver:
     def __init__(self, models_path, model_version: int = 4, verbose: bool = False):
         self.verbose = verbose
         
-        self.category_model_path = models_path + f'/category_class_v{model_version}2024-10-31'
-        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-10-31'
-        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-10-31'
-        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-10-31'
+        self.category_model_path = models_path + f'/category_class_v{model_version}2024-10-30'
+        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-10-30'
+        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-10-30'
+        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-10-30'
         
         self.model_ext = '.model.keras'
         self.indices_ext = '_indices.txt'
@@ -62,10 +62,6 @@ class ImgSolver:
             
             #TODO: sort segments based on y and then x, with some eps threshold
             sorted_seg = sorted(seg_xywh, key=lambda x: x[1])
-            
-            #for s in sorted_seg:
-            #    plt.imshow(s[0])
-            #    plt.show()
             
             segments = [np.expand_dims(segment.astype('float32'), axis=0) for segment, x, y, w, h in sorted_seg]
             batch_segments = np.vstack(segments)

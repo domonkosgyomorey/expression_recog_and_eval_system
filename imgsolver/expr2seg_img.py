@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import skimage
+import matplotlib.pylab as plt
 def expr2segm_img(img) -> list:
     img = cv2.medianBlur(img, 3)
 
@@ -15,10 +16,13 @@ def expr2segm_img(img) -> list:
     
     img = skimage.morphology.dilation(img, skimage.morphology.square(2))
     
+    
     img_size = 45
     contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     segments = []
 
+    
+    
     #TODO: convert contours into image
     #TODO: store original size
 
