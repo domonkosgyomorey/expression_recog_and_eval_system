@@ -42,8 +42,8 @@ Path to the dataset: `imgsolver/model_trainer_dataset`
 ## Used models
 
 - **Version 1**: Simple CNN model
-- **Version 2**: RestNet based small model
-- **Version 3**: VGG, RestNet based modell, with residual blocks
+- **Version 2**: VGG based small model
+- **Version 3**: RestNet based modell, with residual blocks
 - **Version 4**: VGG based bigger modell
 - **Version 5**: (Version 4 + Hu Moments) in paralell
 
