@@ -1,13 +1,10 @@
 import tkinter as tk
-from tkinter import ttk
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageGrab
 from imgsolver import imgsolver as isol
-import matplotlib.pyplot as plt
 import threading
 import queue
-import os
 
 class DrawingApp:
     def __init__(self, root):

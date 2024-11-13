@@ -1,21 +1,29 @@
 from keras import callbacks
+from keras.src.legacy.preprocessing.image import ImageDataGenerator
+from keras import layers, models, losses
+from keras.src.callbacks import ReduceLROnPlateau 
+from keras import Layer
+import keras
+
+import tensorflow as tf
+
+from sklearn.metrics import (classification_report, confusion_matrix, 
+                           roc_curve, auc, precision_recall_curve, 
+                           average_precision_score, f1_score)
+
 import matplotlib.pyplot as plt
-from keras.src.legacy.preprocessing.image import ImageDataGenerator, DirectoryIterator
-from keras import layers, models
-from keras.src.callbacks import EarlyStopping, ReduceLROnPlateau 
 import cv2
 import numpy as np
-import keras
-import livelossplot as llp
+
 import os
 import random
 import datetime
-from sklearn.metrics import (classification_report, confusion_matrix, 
-                           roc_curve, auc, precision_recall_curve, 
-                           average_precision_score)
 import seaborn as sns
 import pandas as pd
+
 from collections import Counter
+
+keras.config.enable_unsafe_deserialization()
 
 CATEGORICAL_CLASS_MODE = 'categorical'
 
@@ -141,6 +149,23 @@ def plot_history(history):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.show()
+    
+@tf.keras.utils.register_keras_serializable()
+def custom_loss(y_true, y_pred):
+    cross_entropy_loss = losses.CategoricalCrossentropy()(y_true, y_pred)
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    y_pred = tf.where(y_pred > 0.5, 1.0, 0.0)
+    tp = tf.reduce_sum(y_true * y_pred, axis=1)
+    fp = tf.reduce_sum((1 - y_true) * y_pred, axis=1)
+    fn = tf.reduce_sum(y_true * (1 - y_pred), axis=1)
+    precision = tp / (tp + fp + tf.keras.backend.epsilon())
+    recall = tp / (tp + fn + tf.keras.backend.epsilon())
+    f1 = 2 * precision * recall / (precision + recall + tf.keras.backend.epsilon())
+    f1_loss = 1 - f1
+    combined_loss = cross_entropy_loss + tf.reduce_mean(f1_loss)
+    return combined_loss
+
 
 def create_model_v1(num_of_classes):
     model = models.Sequential()
@@ -156,7 +181,7 @@ def create_model_v1(num_of_classes):
     
     model.compile(
         optimizer='adam',
-        loss='categorical_crossentropy',
+        loss=custom_loss,
         metrics=['accuracy']
     )
     
@@ -164,6 +189,8 @@ def create_model_v1(num_of_classes):
 
 def create_model_v2(num_of_classes):
     model = models.Sequential([
+        layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)),
+        layers.BatchNormalization(),
         layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
@@ -176,6 +203,8 @@ def create_model_v2(num_of_classes):
         layers.Flatten(),
         layers.Dense(128, activation='relu'),
         layers.Dropout(0.5),
+        layers.Dense(128, activation='relu'),
+        layers.Dropout(0.5),
         layers.Dense(64, activation='relu'),
         layers.Dropout(0.5),
         layers.Dense(num_of_classes, activation='softmax')
@@ -183,7 +212,7 @@ def create_model_v2(num_of_classes):
     
     model.compile(
         optimizer='adam',
-        loss='categorical_crossentropy',
+        loss=custom_loss,
         metrics=['accuracy']
     )
     
@@ -229,7 +258,7 @@ def create_model_v3(num_of_classes):
     
     model.compile(
         optimizer='adam',
-        loss='categorical_crossentropy',
+        loss=custom_loss,
         metrics=['accuracy']
     )
     
@@ -272,7 +301,94 @@ def create_model_v4(num_classes) -> models.Sequential:
     
     model.compile(
         optimizer='adam',
-        loss='categorical_crossentropy',
+        loss=custom_loss,
+        metrics=['accuracy']
+    )
+    
+    return model
+
+
+class RawMomentsLayer(Layer):
+    def __init__(self, **kwargs):
+        super(RawMomentsLayer, self).__init__(**kwargs)
+        
+    def call(self, inputs):
+        def calculate_raw_moments(image_batch):
+            def get_raw_moments(img):
+                m = cv2.moments(img.squeeze())
+                raw_moments = np.array([
+                    m['m00'], m['m10'], m['m01'],
+                    m['m20'], m['m11'], m['m02'],
+                    m['m30'], m['m21'], m['m12'], m['m03']
+                ], dtype='float32')
+                return raw_moments
+
+            return tf.numpy_function(
+                func=lambda x: np.array([get_raw_moments(img) for img in x]),
+                inp=[inputs],
+                Tout=tf.float32
+            )
+        
+        moments = calculate_raw_moments(inputs)
+        moments.set_shape([None, 10])
+        return moments
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], 10)
+
+def create_model_v5(num_classes):
+    input_layer = layers.Input(shape=(45, 45, 1))
+    
+    cnn = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.MaxPooling2D(2, 2)(cnn)
+    cnn = layers.Dropout(0.25)(cnn)
+    
+    cnn = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.MaxPooling2D((2, 2))(cnn)
+    cnn = layers.Dropout(0.25)(cnn)
+    
+    cnn = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.MaxPooling2D((2, 2))(cnn)
+    cnn = layers.Dropout(0.25)(cnn)
+    
+    cnn = layers.Flatten()(cnn)
+    cnn = layers.Dense(512, activation='relu')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.Dropout(0.5)(cnn)
+    cnn = layers.Dense(256, activation='relu')(cnn)
+    cnn = layers.BatchNormalization()(cnn)
+    cnn = layers.Dropout(0.5)(cnn)
+    cnn_output = layers.Dense(num_classes, activation='softmax', name='cnn_output')(cnn)
+    
+    moments = RawMomentsLayer()(input_layer)
+    moments = layers.LayerNormalization()(moments)
+    moments = layers.Dense(128, activation='relu')(moments)
+    moments = layers.BatchNormalization()(moments)
+    moments = layers.Dropout(0.3)(moments)
+    moments = layers.Dense(64, activation='relu')(moments)
+    moments = layers.BatchNormalization()(moments)
+    moments = layers.Dropout(0.3)(moments)
+    moments_output = layers.Dense(num_classes, activation='softmax', name='moments_output')(moments)
+    
+    combined = layers.Average()([
+        layers.Lambda(lambda x: x * 0.7)(cnn_output),
+        layers.Lambda(lambda x: x * 0.3)(moments_output)
+    ])
+    
+    model = models.Model(inputs=input_layer, outputs=combined)
+    
+    model.compile(
+        optimizer='adam',
+        loss=custom_loss,
         metrics=['accuracy']
     )
     
@@ -295,11 +411,10 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
         print(f"Dataset loaded for {name} model")
 
         optimizer = keras.optimizers.Adam(learning_rate=0.001)
-        plot_loss = llp.PlotLossesKeras()
 
         model.compile(
             optimizer=optimizer,
-            loss='categorical_crossentropy',
+            loss=custom_loss,
             metrics=['accuracy'],
         )
 
@@ -321,8 +436,6 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
             ),
             create_checkpoint(model_path),
         ]
-        if enable_plotting:
-            callbacks.append(plot_loss)
         
         model.fit(train_generator,
                   steps_per_epoch=train_generator.samples // train_generator.batch_size,
@@ -336,7 +449,6 @@ def train_models(models_and_names : dict[str, (models.Sequential, str)], path, e
     return model
     
 def validate_models(model, dataset_path, metric_path = None):
-    model:keras.Sequential = model 
     _, validation_generator = create_train_validation_generator(dataset_path, class_mode=
         CATEGORICAL_CLASS_MODE, target_size=(45, 45), validation_split=0.20)
     val_results = model.evaluate(validation_generator, verbose=1)

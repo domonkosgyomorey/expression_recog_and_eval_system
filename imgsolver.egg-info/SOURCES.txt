@@ -12,6 +12,7 @@ imgsolver/model_trainer/generate_model_metrics.py
 imgsolver/model_trainer/model_source_generator.py
 imgsolver/model_trainer/setup.py
 imgsolver/model_trainer/validate_model.py
+imgsolver/model_trainer/my_cnn_models/Model.py
 imgsolver/model_trainer/my_cnn_models/__init__.py
 imgsolver/model_trainer/my_cnn_models/cnn_util.py
 imgsolver/model_trainer/v1_model_source/__init__.py
@@ -34,3 +35,8 @@ imgsolver/model_trainer/v4_model_source/category_model_v4.py
 imgsolver/model_trainer/v4_model_source/digit_model_v4.py
 imgsolver/model_trainer/v4_model_source/operator_model_v4.py
 imgsolver/model_trainer/v4_model_source/paren_model_v4.py
+imgsolver/model_trainer/v5_model_source/__init__.py
+imgsolver/model_trainer/v5_model_source/category_model_v5.py
+imgsolver/model_trainer/v5_model_source/digit_model_v5.py
+imgsolver/model_trainer/v5_model_source/operator_model_v5.py
+imgsolver/model_trainer/v5_model_source/paren_model_v5.py

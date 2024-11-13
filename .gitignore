@@ -1,2 +1,4 @@
 imgsolver/model_trainer/dataset/*
 imgsolver/model_trainer/my_cnn_models/__pycache__
+
+web/*

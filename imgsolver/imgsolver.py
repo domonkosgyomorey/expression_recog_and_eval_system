@@ -4,6 +4,7 @@ import numpy as np
 import sympy
 from imgsolver import expr2seg_img as e2s
 import matplotlib.pylab as plt
+from imgsolver.model_trainer.my_cnn_models.cnn_util import custom_loss
 
 class ImgSolver:
     
@@ -13,10 +14,10 @@ class ImgSolver:
     def __init__(self, models_path, model_version: int = 4, verbose: bool = False):
         self.verbose = verbose
         
-        self.category_model_path = models_path + f'/category_class_v{model_version}2024-10-30'
-        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-10-30'
-        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-10-30'
-        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-10-30'
+        self.category_model_path = models_path + f'/category_class_v{model_version}2024-11-09'
+        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-11-09'
+        self.operator_model_path = models_path + f'/operator_class_v{model_version+1}2024-11-09'
+        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-11-09'
         
         self.model_ext = '.model.keras'
         self.indices_ext = '_indices.txt'
@@ -40,10 +41,10 @@ class ImgSolver:
 
 
         if all(map(os.path.exists, model_paths)):
-            self.models['category'] = [keras.models.load_model(self.category_model_path + self.model_ext), None]
-            self.models['digit'] = [keras.models.load_model(self.digit_model_path + self.model_ext), None]
-            self.models['operator'] = [keras.models.load_model(self.operator_model_path + self.model_ext), None]
-            self.models['paren'] = [keras.models.load_model(self.paren_model_path + self.model_ext), None]
+            self.models['category'] = [keras.models.load_model(self.category_model_path + self.model_ext, custom_objects={'custom_loss': custom_loss}), None]
+            self.models['digit'] = [keras.models.load_model(self.digit_model_path + self.model_ext, custom_objects={'custom_loss': custom_loss}), None]
+            self.models['operator'] = [keras.models.load_model(self.operator_model_path + self.model_ext, custom_objects={'custom_loss': custom_loss}), None]
+            self.models['paren'] = [keras.models.load_model(self.paren_model_path + self.model_ext, custom_objects={'custom_loss': custom_loss}), None]
         else:
             raise Exception("Some models are missing")
 
@@ -59,11 +60,9 @@ class ImgSolver:
         expression = []
         try:
             seg_xywh = e2s.expr2segm_img(img)
+            sorted_seg = sorted(seg_xywh, key=lambda x: (x[1]+x[3])//2)
             
-            #TODO: sort segments based on y and then x, with some eps threshold
-            sorted_seg = sorted(seg_xywh, key=lambda x: x[1])
-            
-            segments = [np.expand_dims(segment.astype('float32'), axis=0) for segment, x, y, w, h in sorted_seg]
+            segments = [np.expand_dims(segment.astype('float32'), axis=0) for segment, x, y, w, h, area in sorted_seg]
             batch_segments = np.vstack(segments)
             
             category_preds = self.models['category'][ImgSolver.MODEL_IDX].predict(batch_segments, verbose=0)
@@ -76,7 +75,7 @@ class ImgSolver:
             expression_chars = []
             
             for i, (category, segment_info) in enumerate(zip(categories, sorted_seg)):
-                segment, x, y, w, h = segment_info
+                segment, x, y, w, h, area = segment_info
                 pred_dist = self.models[category][ImgSolver.MODEL_IDX].predict(np.expand_dims(segment.astype('float32'), axis=0), verbose=0)
                 prediction = self.models[category][ImgSolver.LUT_IDX][np.argmax(pred_dist)]
                 
@@ -89,12 +88,19 @@ class ImgSolver:
                     print('Prediction:', prediction)
                     print('Confidence:', np.max(pred_dist) * np.max(category_preds[i]))
                 
-                expression_chars.append((prediction, x, y, w, h))
+                expression_chars.append((prediction, x, y, w, h, area))
+
+            # Check if a segment is too small
+            for i in range(len(expression_chars)):
+                if expression_chars[i][5] < 10:
+                    s, x, y, w, h, a = expression_chars[i]
+                    s = '.'
+                    expression_chars[i] = (s, x, y, w, h, a) 
             
+            print(expression_chars)                    
             expression = "".join(map(lambda x: x[0], expression_chars))
             if self.verbose:
                 print("[LOG]: ImgSolver, found:", expression)
-            
             
             #TODO: Analize the predicted segments to find fraction, and exponent
             return (expression, sympy.simplify(expression))
