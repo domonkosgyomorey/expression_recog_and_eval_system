@@ -97,7 +97,6 @@ class ImgSolver:
                     s = '.'
                     expression_chars[i] = (s, x, y, w, h, a) 
             
-            print(expression_chars)                    
             expression = "".join(map(lambda x: x[0], expression_chars))
             if self.verbose:
                 print("[LOG]: ImgSolver, found:", expression)

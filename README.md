@@ -1,71 +1,98 @@
 # Description
 
-A handwirtten math expression evaluation project for a course at my University
+This is a handwritten math expression recognition and evaluation system, which is made for a University project
 
-( Currently not working properly )
+## Features
 
-**There is some advanced mechanisms such as:**
-- Automatic source file generator for training models
-- Automatic dependency installation via `setup.py`
-
-**Main folders**
-- `imgsolver` ( segmentation, and prediction )
-- `my_cnn_models` ( utilty for creating, training CNN networks )
-
-## Dataset
-https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols<br>
-The Dataset contains lots of different math symbols on a 45x45 picture
-When reading the dataset I do a data augmentation for better learning
-
-**Final Dataset Structure**
-- dataset/digit/`(0..9)`/....png
-- dataset/operator/`( +,-,times,div )`/....png
-- dataset/paren/`( (,) )`/....png
-
-**Dataset Transformation**
-- With `dataset_trainsform.ps1` scirpt, I limited each class of the dataset to **2000**
-
-**Script Usage**
-- The `source` var what we need to change when we limiting the number of images in a class
-
-**Recommendations to install and setup the dataset folder**
-- Firstly, I recommend to use the  [7-Zip](https://www.7-zip.org/) for faster unzipping folder (much much faster)
-- Secondly, I recommend to try not to copy the file, but just cut and paste it into an another directory
-- Thirdly, I recommend to compress the dataset before we move it to another folder
-
-## Current models
-
-- A binary classification model which recognize if the character is a number or a math operator or a parenthesis
-- A number classification model
-- A math operator classification model
-- A paren classification model
-
-Each model have four version.
-
-### Version 1
-Simple CNN network, without batch normalization
-
-### Version 2
-Simple CNN network, with batch normalization
-
-### Version 3
-A Simple restNet based model
-
-### Version 4
-VGG, restNet based model
-
-## Current segmentation mechanism
-- median filter
-- thresholding
-- skeletonizing (This update was very impactful)
-- morphology operation(thickening lines) (I think about this)
-- finding contours
-- creating a bounding box
-- resizeing the ROI image
-- sorting the segment based on X,Y coordinate
+- With ** syntax we can create exponent operation
+- Floating point with . operator ( Or operator which very small )
+- Parenthesis
 
 ## Future plans
-- Better segmentation mechnism
-- Creating some data structure for storing the segments
-- Develop an algorithm for reconstructing math symbol from different segments ( like fraction )
- 
+
+- Fraction syntax and more sign
+
+## The Project Structure
+
+- `desktop` folder, which contains a frontend for Desktop
+- `imgsolver` folder, where the logic and the models belong
+- `models`, where I store the models while I am training them
+- `web`, a fontend for Web ( Something went frong, so I can't upload the frontend part of it )
+
+## How to register the library to the local python library?
+
+```bash
+pip install -e .
+```
+
+
+## The training dataset
+
+[link to the dataset](https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols)
+
+Used symbols:
+
+- **Digits**: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+- **Operators**: +, - , /, *
+- **Parenthesis**: (, )
+
+Path to the dataset: `imgsolver/model_trainer_dataset`
+
+
+## Used models
+
+- **Version 1**: Simple CNN model
+- **Version 2**: RestNet based small model
+- **Version 3**: VGG, RestNet based modell, with residual blocks
+- **Version 4**: VGG based bigger modell
+- **Version 5**: (Version 4 + Hu Moments) in paralell
+
+## Character extractation method from image
+
+- Median Blur
+- Inverting Color
+- Skeletonization
+- Morphological Dilation
+- Contour Finding
+- Extracting characters based on the contours box
+
+## Important Files
+
+### Training Files
+
+- `imgsolver/model_trainer/my_cnn_models/cnn_utils.py`: the model creation, training, validation, data import code. LoC ~ 600
+- `imgsolver/model_trainer/expr2seg_img.py`: Converting image to segments. LoC ~ 40
+- `imgsolver/model_trainer/imgsolver.py`: Loading models, and evaluating experssion on images. LoC ~ 120
+- `imgsolver/model_trainer/dataset_transform.ps1`: A powershell script to reduce amount of image in the dataset to a serten amount. LoC  ~ 20
+- `imgsolver/model_trainer/model_source_generator.py`: Generating file to train all version of models. LoC ~ 30
+- `imgsolver/model_trainer/generate_model_metrics.py`: With this script, we can generate excell file about the model metrics. LoC ~ 20
+- `imgsolver/model_trainer/v?_model_source/*`: the training code for each version. LoC ~ 4 * 5 * 5 ~ 100
+
+### Desktop Frontend Files
+
+- `desktop/main.py`: A Tkinter Application where we can test the system. LoC ~ 200
+
+### Models
+
+- `models` folder contains the traing models, the newer models have cronologically bigger date
+
+
+## Preview
+
+![img](img_for_readme/preview.png)
+
+
+## Dependencies
+
+- sklearn
+- tensorflow
+- skimage
+- opencv
+- keras
+- tkinter
+- sympy
+- numpy
+- scikit-learn
+- pandas
+- joblib
+- seaborn
