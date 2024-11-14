@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import skimage
+import matplotlib.pylab as plt
 
 def expr2segm_img(img) -> list:
     img = cv2.medianBlur(img, 3)

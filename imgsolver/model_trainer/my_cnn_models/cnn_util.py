@@ -169,12 +169,16 @@ def custom_loss(y_true, y_pred):
 
 def create_model_v1(num_of_classes):
     model = models.Sequential()
+    
     model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)))
     model.add(layers.MaxPooling2D((2, 2)))
+    
     model.add(layers.Conv2D(32, (3, 3), activation='relu'))
     model.add(layers.MaxPooling2D((2, 2)))
+    
     model.add(layers.Conv2D(64, (3, 3), activation='relu'))
     model.add(layers.MaxPooling2D((2, 2)))
+    
     model.add(layers.Flatten())
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(num_of_classes, activation='softmax'))
@@ -189,17 +193,21 @@ def create_model_v1(num_of_classes):
 
 def create_model_v2(num_of_classes):
     model = models.Sequential([
+        
         layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)),
         layers.BatchNormalization(),
         layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
+        
         layers.Conv2D(64, (3, 3), activation='relu'),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
+        
         layers.Conv2D(64, (3, 3), activation='relu'),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
+        
         layers.Flatten(),
         layers.Dense(128, activation='relu'),
         layers.Dropout(0.5),
@@ -266,6 +274,7 @@ def create_model_v3(num_of_classes):
 
 def create_model_v4(num_classes) -> models.Sequential:
     model = models.Sequential([
+    
         layers.Input(shape=(45,45,1)),
         
         layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
@@ -307,10 +316,10 @@ def create_model_v4(num_classes) -> models.Sequential:
     
     return model
 
-
-class RawMomentsLayer(Layer):
+@keras.saving.register_keras_serializable()
+class HuMomentsLayer(Layer):
     def __init__(self, **kwargs):
-        super(RawMomentsLayer, self).__init__(**kwargs)
+        super(HuMomentsLayer, self).__init__(**kwargs)
         
     def call(self, inputs):
         def calculate_raw_moments(image_batch):
@@ -337,6 +346,7 @@ class RawMomentsLayer(Layer):
         return (input_shape[0], 10)
 
 def create_model_v5(num_classes):
+    
     input_layer = layers.Input(shape=(45, 45, 1))
     
     cnn = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
@@ -369,7 +379,7 @@ def create_model_v5(num_classes):
     cnn = layers.Dropout(0.5)(cnn)
     cnn_output = layers.Dense(num_classes, activation='softmax', name='cnn_output')(cnn)
     
-    moments = RawMomentsLayer()(input_layer)
+    moments = HuMomentsLayer()(input_layer)
     moments = layers.LayerNormalization()(moments)
     moments = layers.Dense(128, activation='relu')(moments)
     moments = layers.BatchNormalization()(moments)

@@ -8,7 +8,7 @@ import queue
 
 class DrawingApp:
     def __init__(self, root):
-        self.im_solver = isol.ImgSolver('../models', verbose=False)
+        self.im_solver = isol.ImgSolver('../models', verbose=True)
         self.root = root
         self.root.title("Mathematical Expression Recognition")
         self.bg_color = "#f0f0f0"

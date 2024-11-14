@@ -14,9 +14,9 @@ class ImgSolver:
     def __init__(self, models_path, model_version: int = 4, verbose: bool = False):
         self.verbose = verbose
         
-        self.category_model_path = models_path + f'/category_class_v{model_version}2024-11-09'
+        self.category_model_path = models_path + f'/category_class_v{model_version}2024-11-14'
         self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-11-09'
-        self.operator_model_path = models_path + f'/operator_class_v{model_version+1}2024-11-09'
+        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-11-14'
         self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-11-09'
         
         self.model_ext = '.model.keras'
