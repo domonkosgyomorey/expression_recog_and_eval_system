@@ -9,7 +9,7 @@ import tensorflow as tf
 
 from sklearn.metrics import (classification_report, confusion_matrix, 
                            roc_curve, auc, precision_recall_curve, 
-                           average_precision_score, f1_score)
+                           average_precision_score)
 
 import matplotlib.pyplot as plt
 import cv2
@@ -316,93 +316,6 @@ def create_model_v4(num_classes) -> models.Sequential:
     
     return model
 
-@keras.saving.register_keras_serializable()
-class HuMomentsLayer(Layer):
-    def __init__(self, **kwargs):
-        super(HuMomentsLayer, self).__init__(**kwargs)
-        
-    def call(self, inputs):
-        def calculate_raw_moments(image_batch):
-            def get_raw_moments(img):
-                m = cv2.moments(img.squeeze())
-                raw_moments = np.array([
-                    m['m00'], m['m10'], m['m01'],
-                    m['m20'], m['m11'], m['m02'],
-                    m['m30'], m['m21'], m['m12'], m['m03']
-                ], dtype='float32')
-                return raw_moments
-
-            return tf.numpy_function(
-                func=lambda x: np.array([get_raw_moments(img) for img in x]),
-                inp=[inputs],
-                Tout=tf.float32
-            )
-        
-        moments = calculate_raw_moments(inputs)
-        moments.set_shape([None, 10])
-        return moments
-
-    def compute_output_shape(self, input_shape):
-        return (input_shape[0], 10)
-
-def create_model_v5(num_classes):
-    
-    input_layer = layers.Input(shape=(45, 45, 1))
-    
-    cnn = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.MaxPooling2D(2, 2)(cnn)
-    cnn = layers.Dropout(0.25)(cnn)
-    
-    cnn = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.MaxPooling2D((2, 2))(cnn)
-    cnn = layers.Dropout(0.25)(cnn)
-    
-    cnn = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.MaxPooling2D((2, 2))(cnn)
-    cnn = layers.Dropout(0.25)(cnn)
-    
-    cnn = layers.Flatten()(cnn)
-    cnn = layers.Dense(512, activation='relu')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.Dropout(0.5)(cnn)
-    cnn = layers.Dense(256, activation='relu')(cnn)
-    cnn = layers.BatchNormalization()(cnn)
-    cnn = layers.Dropout(0.5)(cnn)
-    cnn_output = layers.Dense(num_classes, activation='softmax', name='cnn_output')(cnn)
-    
-    moments = HuMomentsLayer()(input_layer)
-    moments = layers.LayerNormalization()(moments)
-    moments = layers.Dense(128, activation='relu')(moments)
-    moments = layers.BatchNormalization()(moments)
-    moments = layers.Dropout(0.3)(moments)
-    moments = layers.Dense(64, activation='relu')(moments)
-    moments = layers.BatchNormalization()(moments)
-    moments = layers.Dropout(0.3)(moments)
-    moments_output = layers.Dense(num_classes, activation='softmax', name='moments_output')(moments)
-    
-    combined = layers.Average()([
-        layers.Lambda(lambda x: x * 0.7)(cnn_output),
-        layers.Lambda(lambda x: x * 0.3)(moments_output)
-    ])
-    
-    model = models.Model(inputs=input_layer, outputs=combined)
-    
-    model.compile(
-        optimizer='adam',
-        loss=custom_loss,
-        metrics=['accuracy']
-    )
-    
-    return model
 
 def train_models(models_and_names : dict[str, (models.Sequential, str)], path, epoch, enable_plotting=True):
     for name, (model, dataset_path) in models_and_names.items():

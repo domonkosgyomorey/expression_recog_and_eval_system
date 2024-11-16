@@ -27,4 +27,3 @@ create_model_source(1, model_names, num_classes, dataset_paths, '../../models', 
 create_model_source(2, model_names, num_classes, dataset_paths, '../../models', 20)
 create_model_source(3, model_names, num_classes, dataset_paths, '../../models', 20)
 create_model_source(4, model_names, num_classes, dataset_paths, '../../models', 20)
-create_model_source(5, model_names, num_classes, dataset_paths, '../../models', 20)
