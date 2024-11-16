@@ -25,7 +25,6 @@ This is a handwritten math expression recognition and evaluation system, which i
 pip install -e .
 ```
 
-
 ## The training dataset
 
 [link to the dataset](https://www.kaggle.com/datasets/xainano/handwrittenmathsymbols)
@@ -38,14 +37,13 @@ Used symbols:
 
 Path to the dataset: `imgsolver/model_trainer_dataset`
 
-
 ## Used models
 
 - **Version 1**: Simple CNN model
 - **Version 2**: VGG based small model
 - **Version 3**: RestNet based modell, with residual blocks
 - **Version 4**: VGG based bigger modell
-- **Version 5**: (Version 4 + Hu Moments) in paralell
+- **Version 5**: (Version 4 + Hu Moments) in paralell ( **removed** )
 
 ## Character extractation method from image
 
@@ -76,11 +74,9 @@ Path to the dataset: `imgsolver/model_trainer_dataset`
 
 - `models` folder contains the traing models, the newer models have cronologically bigger date
 
-
 ## Preview
 
 ![img](img_for_readme/preview.png)
-
 
 ## Dependencies
 
