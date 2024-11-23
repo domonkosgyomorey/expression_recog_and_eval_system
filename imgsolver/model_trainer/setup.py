@@ -24,6 +24,7 @@ requirements = [
     'scikit-learn',
     'seaborn',
     'tensorflow',
+    'PySide6'
 ]
 
 setup(
