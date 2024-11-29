@@ -86,9 +86,16 @@ F1 score is a good mesuremet for models, so I made a loss function which include
 ![](img_for_obsidian/operator-11-14_conf.png)
 
 
-### Improvement from version 
-|class| precision | recall | f1  |
-|:-:| :-------: | :----: | :--: |
-|'-'|1|0.996|0.997|
-|','|0.999|0.999|0.999|
-|'+'|0.98|0.692|0.811|
+## Loss function changed
+>>My loss function turnd into a categorical cross entropy and dice score combo
+
+### Back to the beginning
+>>I noticed when I trained the models they had 2.000.000 parameter, which is lot for this small data. So I wondered, after I improved the preprocessing is it worth it, if I tried my oldest model.
+>
+>It was very good, It leared very fast and achived better and stabler result then the later versions.
+>The version 1 model has 100.000 parameter
+>The result:
+#### Submodels
+>>close 99.9% it seems overfitting, but it isn't.
+#### Base model
+>>Accuracy and other scores was around 92% which is acceptable I think.
