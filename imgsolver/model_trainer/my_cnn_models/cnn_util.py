@@ -152,19 +152,9 @@ def plot_history(history):
     
 @tf.keras.utils.register_keras_serializable()
 def custom_loss(y_true, y_pred):
-    cross_entropy_loss = losses.CategoricalCrossentropy()(y_true, y_pred)
-    y_true = tf.cast(y_true, tf.float32)
-    y_pred = tf.cast(y_pred, tf.float32)
-    y_pred = tf.where(y_pred > 0.5, 1.0, 0.0)
-    tp = tf.reduce_sum(y_true * y_pred, axis=1)
-    fp = tf.reduce_sum((1 - y_true) * y_pred, axis=1)
-    fn = tf.reduce_sum(y_true * (1 - y_pred), axis=1)
-    precision = tp / (tp + fp + tf.keras.backend.epsilon())
-    recall = tp / (tp + fn + tf.keras.backend.epsilon())
-    f1 = 2 * precision * recall / (precision + recall + tf.keras.backend.epsilon())
-    f1_loss = 1 - f1
-    combined_loss = cross_entropy_loss + tf.reduce_mean(f1_loss)
-    return combined_loss
+    cce_loss = tf.keras.losses.CategoricalCrossentropy()(y_true, y_pred)
+    dice_loss = 1 - (2 * tf.reduce_sum(y_true * y_pred) + 1) / (tf.reduce_sum(y_true + y_pred) + 1)
+    return (cce_loss + dice_loss)*0.5
 
 
 def create_model_v1(num_of_classes):
@@ -180,7 +170,8 @@ def create_model_v1(num_of_classes):
     model.add(layers.MaxPooling2D((2, 2)))
     
     model.add(layers.Flatten())
-    model.add(layers.Dense(64, activation='relu'))
+    model.add(layers.Dense(128, activation='relu'))
+    layers.Dropout(0.3)
     model.add(layers.Dense(num_of_classes, activation='softmax'))
     
     model.compile(
@@ -196,7 +187,7 @@ def create_model_v2(num_of_classes):
         
         layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)),
         layers.BatchNormalization(),
-        layers.Conv2D(32, (3, 3), activation='relu', input_shape=(45, 45, 1)),
+        layers.Conv2D(32, (3, 3), activation='relu'),
         layers.BatchNormalization(),
         layers.MaxPooling2D((2, 2)),
         
@@ -315,7 +306,6 @@ def create_model_v4(num_classes) -> models.Sequential:
     )
     
     return model
-
 
 def train_models(models_and_names : dict[str, (models.Sequential, str)], path, epoch, enable_plotting=True):
     for name, (model, dataset_path) in models_and_names.items():

@@ -14,10 +14,10 @@ class ImgSolver:
     def __init__(self, models_path, model_version: int = 4, verbose: bool = False):
         self.verbose = verbose
         
-        self.category_model_path = models_path + f'/category_class_v{model_version}2024-11-14'
-        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-11-09'
-        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-11-14'
-        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-11-09'
+        self.category_model_path = models_path + f'/category_class_v{model_version}2024-11-27'
+        self.digit_model_path = models_path + f'/digit_class_v{model_version}2024-11-27'
+        self.operator_model_path = models_path + f'/operator_class_v{model_version}2024-11-27'
+        self.paren_model_path = models_path + f'/paren_class_v{model_version}2024-11-27'
         
         self.model_ext = '.model.keras'
         self.indices_ext = '_indices.txt'
@@ -92,7 +92,7 @@ class ImgSolver:
 
             # Check if a segment is too small
             for i in range(len(expression_chars)):
-                if expression_chars[i][5] < 10:
+                if expression_chars[i][5] < 20:
                     s, x, y, w, h, a = expression_chars[i]
                     s = '.'
                     expression_chars[i] = (s, x, y, w, h, a) 

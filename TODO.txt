@@ -1,0 +1,5 @@
+TODO: model.layers[-1].trainable = False
+Ez kell, hogy ne tanuljanak a korabbi rétegek csak amit hozzaadunk
+
+for layer in new_model.layers[:-1]:
+    layer.trainable = False
