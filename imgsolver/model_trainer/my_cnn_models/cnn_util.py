@@ -1,8 +1,7 @@
 from keras import callbacks
 from keras.src.legacy.preprocessing.image import ImageDataGenerator
-from keras import layers, models, losses
+from keras import layers, models
 from keras.src.callbacks import ReduceLROnPlateau 
-from keras import Layer
 import keras
 
 import tensorflow as tf
