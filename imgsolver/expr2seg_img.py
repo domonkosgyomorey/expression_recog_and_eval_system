@@ -38,8 +38,7 @@ def expr2segm_img(img) -> list:
         rs[:, :, 1] = blank
         rs[:, :, 2] = blank
         rs = rs[:, :, 0] / 255.0
-        #plt.imshow(rs)
-        #plt.show()
+
         segments.append((rs, x, y, w, h, area))
 
     return segments

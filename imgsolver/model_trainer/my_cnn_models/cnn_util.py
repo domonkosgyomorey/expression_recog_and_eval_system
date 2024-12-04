@@ -76,7 +76,7 @@ def create_train_validation_generator_augmented(dataset_path, rescale=1.0/255.0,
         rescale=rescale,
         validation_split=validation_split,
         #rotation_range=5,
-       # preprocessing_function=thickening_line
+        #preprocessing_function=thickening_line
     )
     
     
